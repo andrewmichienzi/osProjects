@@ -9,6 +9,14 @@ void* merger(void*);
 void* sorter(void*);
 void* createMerger(pthread_t *tMerger, int *mNumber);
 void* createSorter(pthread_t *tSorter, int *sNumber);
+
+struct Customer
+{
+	int transactionNum;
+	int customerNum;
+	double amount;
+};
+void* readDataFile(struct Customer *customers, int sNumber);
 int main() 
 { 
 	pthread_t merger1, merger2;
@@ -43,6 +51,7 @@ void* createMerger(pthread_t *tMerger, int *mNumber)
 	}
 	return(0);
 }
+
 void* merger(void* arg)
 {
 	pthread_t sorter1, sorter2;
@@ -88,7 +97,44 @@ void* createSorter(pthread_t *tSorter, int *sNumber)
 void* sorter(void* arg)
 {
 	int* sNumber = (int *)arg;
+	struct Customer customers;
 	printf("Sorter number: %d\n", *sNumber);
 	fflush(stdout);
+	if(*sNumber == 1)
+	{
+		printf("Hello\n");
+		readDataFile(&customers, *sNumber);	
+	}
 	return(0);
 }
+
+/*
+ *Code taken from http://stackoverflow.com/questions/3501338/c-read-file-line-by-line
+ */
+void* readDataFile(struct Customer *customers, int sNumber)
+{
+	char * line = NULL;
+	FILE * fp;
+	size_t len = 0;
+	ssize_t read;
+	char *file = malloc(12*sizeof(char));
+	sprintf(file, "file_%d.dat", sNumber);
+	printf("%s\n", file);
+ 	
+	fp = fopen(file, "r");
+	if(fp==NULL)
+		exit(EXIT_FAILURE);
+	int i = 0;
+	while((read = getline(&line, &len, fp)) != -1)
+	{	
+		//Create a customer from a line in data
+		while
+	}
+	
+	fclose(fp);
+	if(line)
+		free(line);
+	exit(EXIT_SUCCESS);
+	return(0);	
+}
+
