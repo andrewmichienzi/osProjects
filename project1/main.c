@@ -16,7 +16,9 @@ struct Customer
 	int customerNum;
 	double amount;
 };
-void* readDataFile(struct Customer *customers, int sNumber);
+void* readDataFile(struct Customer *customers, int sNumber, int * fileSize);
+void* sortCustomers(struct Customer *customers, int * fileSize);
+void* printCustomers(struct Customer *customers, int fileSize);
 int main() 
 { 
 	pthread_t merger1, merger2;
@@ -56,7 +58,6 @@ void* merger(void* arg)
 {
 	pthread_t sorter1, sorter2;
 	int * mNumber = (int *)arg;
-	printf("Merger Number %d\n", *mNumber);
 	int *sNumbers = malloc(2*sizeof(int));
 	if(*mNumber == 1)
 	{
@@ -98,20 +99,18 @@ void* sorter(void* arg)
 {
 	int* sNumber = (int *)arg;
 	struct Customer customers;
-	printf("Sorter number: %d\n", *sNumber);
-	fflush(stdout);
-	if(*sNumber == 1)
-	{
-		printf("Hello\n");
-		readDataFile(&customers, *sNumber);	
-	}
+	int fileSize = 0;
+	readDataFile(&customers, *sNumber, &fileSize);
+	sortCustomers(&customers, &fileSize);
+	//printCustomers(&customers, fileSize);
+	sleep(10);
 	return(0);
 }
 
 /*
  *Code taken from http://stackoverflow.com/questions/3501338/c-read-file-line-by-line
  */
-void* readDataFile(struct Customer *customers, int sNumber)
+void* readDataFile(struct Customer *customers, int sNumber, int * fileSize)
 {
 	char * line = NULL;
 	FILE * fp;
@@ -119,22 +118,81 @@ void* readDataFile(struct Customer *customers, int sNumber)
 	ssize_t read;
 	char *file = malloc(12*sizeof(char));
 	sprintf(file, "file_%d.dat", sNumber);
-	printf("%s\n", file);
- 	
 	fp = fopen(file, "r");
+	
 	if(fp==NULL)
+	{
+		printf("file failure\n");
+		fflush(stdout);
 		exit(EXIT_FAILURE);
-	int i = 0;
+	}
 	while((read = getline(&line, &len, fp)) != -1)
 	{	
 		//Create a customer from a line in data
-		while
+		char * delim;
+		char *savePtr;
+		delim = strtok_r(line, " ", &savePtr);
+		int column = 0;
+		while(delim != NULL)
+		{
+			
+			if(column == 0)
+			{			//Trans Num
+				sscanf(delim, "%d", &((customers + (*fileSize))->transactionNum)); 
+			}
+			else if(column == 1)
+			{			//Cust Num
+				sscanf(delim, "%d", &(customers + *fileSize)->customerNum);
+			}
+			else
+			{			//Amount
+				sscanf(delim, "%lf", &(customers + *fileSize)->amount);			
+			}
+			column++;
+			delim = strtok_r(NULL, " ", &savePtr);
+		}	
+		(*fileSize)++;
 	}
 	
 	fclose(fp);
 	if(line)
 		free(line);
-	exit(EXIT_SUCCESS);
-	return(0);	
+	return (0);
 }
 
+void* sortCustomers(struct Customer *customers, int * fileSize)
+{
+	struct Customer temp, temp2;
+	int i, j, swaps;
+	for(i=0; i<(*fileSize)-2; i++)
+	{
+		swaps = 0;
+		for (j=0; j<(*fileSize)-1; j++)
+		{
+			if((*(customers+j)).customerNum > (*(customers+j+1)).customerNum)
+			{	
+				temp = *(customers+j);
+				temp2 = *(customers+j+1);
+				*(customers + j) = *(customers+j+1);
+				*(customers + j + 1) = temp;
+				swaps++;
+			}
+		}
+		if(swaps == 0){
+			printf("break\n");
+			break;
+		}
+	}
+	printf("After Sort\n");
+	return(0);
+}
+
+void* printCustomers(struct Customer *customers, int fileSize)
+{
+	int i;
+	for(i = 0; i < fileSize; i++)
+	{
+		printf("customerNum = %d\n",(*(customers+i)).customerNum); 
+	}
+	return(0);	
+}
