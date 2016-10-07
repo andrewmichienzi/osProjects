@@ -29,6 +29,7 @@ struct threadArgs
 	struct Customer nextCustomer;
 	int fd[2];
 	int isMaster;
+	int treeSizeArg;
 };
 
 void* merger(void*);
@@ -43,12 +44,15 @@ void* countLines (int sNumber, int * fileSize);
 void writeToParent(struct threadArgs * parentArgs, int * fileSize);
 void readFromChild(struct threadArgs * childArgs);
 int processInformation(struct threadArgs * childArgs1, struct threadArgs * childArgs2, struct threadArgs * parentArgs);
+void findTreeSizeArgs(int numOfFiles, int * treeSizeArg);
 struct Customer* getNextCustomer(struct threadArgs * args1, struct threadArgs * args2);
 /*
  * A file sorter with ability to sort 4 data files based on customer number from smallest customer number to largest. The sorter processes use bubble sort to sort the customer numbers, then send one customer up at a time to the merger. The merger has two children which it evaluates the 2 customers that are passed up to it and finds the smallest customer number, sending it to the master. The master again has 2 children that it finds the smallest customer number between the 2 and prints the smallest.
  */
-int main() 
+int main(int argc, char* argv[]) 
 { 
+
+
 	//int status;
 	struct threadArgs childArgs1 = {1,{false, false}, 0, 1, 1, 1};
 	struct threadArgs childArgs2 = {2, {false, false}, 0, 1, 1, 1};	
@@ -56,6 +60,21 @@ int main()
 	masterArgs.isMaster = 1;
 	childArgs1.isMaster = 0;
 	childArgs1.isMaster = 0;
+	int treeSizeArg;
+	if(argc == 2)
+	{
+		int numOfFiles = atoi(argv[1]);
+		findTreeSizeArgs(numOfFiles, &treeSizeArg);
+	}
+	
+	else
+	{
+		treeSizeArg = 1;	
+	}
+
+	childArgs1.treeSizeArg = treeSizeArg;
+	childArgs2.treeSizeArg = treeSizeArg;
+
 	createMerger(&childArgs1);
 	createMerger(&childArgs2);
 	
@@ -112,7 +131,7 @@ void* merger(void* arg)
 	struct threadArgs childArgs2 = {0, {false, false}, 0, 1, 1, 2};
 	childArgs1.isMaster = 0;
 	childArgs2.isMaster = 0;
-
+/*
 	if(*mNumber == 1)
 	{
 		childArgs1.threadNumber = 1;
@@ -123,9 +142,22 @@ void* merger(void* arg)
 		childArgs1.threadNumber = 3;
 		childArgs2.threadNumber = 4;
 	}
+*/
+	childArgs1.threadNumber = (((*mNumber)*2)-1);
+	childArgs2.threadNumber = ((*mNumber)*2);
 
-	createSorter(&childArgs1);
-	createSorter(&childArgs2);
+	if((*parentArgs).treeSizeArg == 1)
+	{
+		createSorter(&childArgs1);
+		createSorter(&childArgs2);
+	}
+	else
+	{
+		childArgs1.treeSizeArg = (parentArgs->treeSizeArg - 1);
+		childArgs2.treeSizeArg = (parentArgs->treeSizeArg - 1);
+		createMerger(&childArgs1);
+		createMerger(&childArgs2);
+	}
 	
 	processInformation(&childArgs1, &childArgs2, parentArgs);
 		
@@ -171,13 +203,20 @@ void* createSorter(struct threadArgs *sorterArgs)
  */
 void* sorter(void* arg)
 {
+	int couldFindFile;
 	struct threadArgs * mergerArgs = (struct threadArgs *)arg;
 	sleep(30);
 	int * sNumber = &mergerArgs->threadNumber;
 	printf("Sorter %d created\n", *sNumber);
 	int fileSize = 0;	
 	printf("%d counting lines\n", *sNumber);
-	countLines (*sNumber, &fileSize);
+	couldFindFile = countLines (*sNumber, &fileSize);
+
+	if(!couldFindFile)
+	{	
+		close((*mergerArgs).fd[WRITE]);
+		return 0;
+	}
 	struct Customer * customers = malloc(fileSize*sizeof(struct Customer));
 	printf("%d reading file\n", *sNumber);
 	readDataFile(customers, *sNumber);
@@ -198,7 +237,7 @@ void* sorter(void* arg)
 /*
  * counts the number of lines in the file
  */
-void* countLines (int sNumber, int * fileSize)
+int countLines (int sNumber, int * fileSize, )
 {
 	char * line = NULL;
 	FILE * fp;
@@ -210,9 +249,9 @@ void* countLines (int sNumber, int * fileSize)
 	
 	if(fp==NULL)
 	{
-		printf("file failure\n");
+		printf("Could not find file_%d.dat\n", sNumber);
 		fflush(stdout);
-		exit(EXIT_FAILURE);
+		return 0;
 	}
 	while((read = getline(&line, &len, fp)) != -1)
 	{	
@@ -222,7 +261,7 @@ void* countLines (int sNumber, int * fileSize)
 	fclose(fp);
 	if(line)
 		free(line);
-	return (0);		
+	return (1);		
 }
 
 /*
@@ -418,6 +457,15 @@ void writeToParent(struct threadArgs * parentArgs, int * fileSize)
 }
 
 
+void findTreeSizeArgs(int numOfFiles, int * treeSizeArg)
+{	
+	(*treeSizeArg) = 1;	
+	while(numOfFiles < (2**(*treeSizeArg)))
+	{
+		(*treeSizeArg)++;
+	}
+
+}
 
 /*Sample Output
 Sorter 4 created
