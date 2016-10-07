@@ -40,11 +40,12 @@ void* readDataFile(struct Customer *customers, int sNumber);
 void* sortCustomers(struct Customer *customers, int * fileSize);
 void* printCustomers(struct Customer *customers, int fileSize);
 void* printCustomer(struct Customer *customer);
-void* countLines (int sNumber, int * fileSize);
+int countLines (int sNumber, int * fileSize);
 void writeToParent(struct threadArgs * parentArgs, int * fileSize);
 void readFromChild(struct threadArgs * childArgs);
 int processInformation(struct threadArgs * childArgs1, struct threadArgs * childArgs2, struct threadArgs * parentArgs);
 void findTreeSizeArgs(int numOfFiles, int * treeSizeArg);
+int power(int base, int exp);
 struct Customer* getNextCustomer(struct threadArgs * args1, struct threadArgs * args2);
 /*
  * A file sorter with ability to sort 4 data files based on customer number from smallest customer number to largest. The sorter processes use bubble sort to sort the customer numbers, then send one customer up at a time to the merger. The merger has two children which it evaluates the 2 customers that are passed up to it and finds the smallest customer number, sending it to the master. The master again has 2 children that it finds the smallest customer number between the 2 and prints the smallest.
@@ -126,33 +127,23 @@ void* merger(void* arg)
 {
 	struct threadArgs * parentArgs = (struct threadArgs *)arg;
 	int * mNumber = &parentArgs->threadNumber;
-	printf("Merger %d created\n", *mNumber);	
+	printf("Merger %d created\n", *mNumber);
 	struct threadArgs childArgs1 = {0, {false, false}, 0, 1, 1, 1};
 	struct threadArgs childArgs2 = {0, {false, false}, 0, 1, 1, 2};
 	childArgs1.isMaster = 0;
 	childArgs2.isMaster = 0;
-/*
-	if(*mNumber == 1)
-	{
-		childArgs1.threadNumber = 1;
-		childArgs2.threadNumber = 2;
-	}
-	else
-	{
-		childArgs1.threadNumber = 3;
-		childArgs2.threadNumber = 4;
-	}
-*/
 	childArgs1.threadNumber = (((*mNumber)*2)-1);
 	childArgs2.threadNumber = ((*mNumber)*2);
 
 	if((*parentArgs).treeSizeArg == 1)
 	{
+		printf("if\n");
 		createSorter(&childArgs1);
 		createSorter(&childArgs2);
 	}
 	else
 	{
+		printf("else\n");
 		childArgs1.treeSizeArg = (parentArgs->treeSizeArg - 1);
 		childArgs2.treeSizeArg = (parentArgs->treeSizeArg - 1);
 		createMerger(&childArgs1);
@@ -205,12 +196,12 @@ void* sorter(void* arg)
 {
 	int couldFindFile;
 	struct threadArgs * mergerArgs = (struct threadArgs *)arg;
-	sleep(30);
+	//sleep(30);
 	int * sNumber = &mergerArgs->threadNumber;
 	printf("Sorter %d created\n", *sNumber);
 	int fileSize = 0;	
 	printf("%d counting lines\n", *sNumber);
-	couldFindFile = countLines (*sNumber, &fileSize);
+	couldFindFile = (int)countLines (*sNumber, &fileSize);
 
 	if(!couldFindFile)
 	{	
@@ -237,7 +228,7 @@ void* sorter(void* arg)
 /*
  * counts the number of lines in the file
  */
-int countLines (int sNumber, int * fileSize, )
+int countLines (int sNumber, int * fileSize)
 {
 	char * line = NULL;
 	FILE * fp;
@@ -314,7 +305,7 @@ void* readDataFile(struct Customer *customers, int sNumber)
 	fclose(fp);
 	if(line)
 		free(line);
-	sleep(10);
+	//sleep(10);
 	return (0);
 }
 
@@ -456,312 +447,41 @@ void writeToParent(struct threadArgs * parentArgs, int * fileSize)
 	}
 }
 
-
+/*
+ * This function takes the amount of files needed to sort and determines treeSizeArg, which is stored in the Customer struct and is used to determine how many mergers will be needed.
+ */
 void findTreeSizeArgs(int numOfFiles, int * treeSizeArg)
 {	
-	(*treeSizeArg) = 1;	
-	while(numOfFiles < (2**(*treeSizeArg)))
+	(*treeSizeArg) = 1;
+	int p;
+	p = power(2, 1);
+	while(numOfFiles > p)
 	{
 		(*treeSizeArg)++;
+		p = power(2, (*treeSizeArg));	
 	}
-
+	(*treeSizeArg)--;
+}
+/*
+ * Got from stack overflow
+ * stackoverflow.com/questions/213042/how-do-you-do-exponentation-in-c
+ * user: ephemient
+ * Probably could have figured this out on my own, but the internet
+ */
+int power(int base, int exp)
+{	
+	if(exp == 0)
+		return 1;
+	else if(exp % 2)
+		return base * power(base, exp - 1);
+	else
+	{
+		int temp = power(base, exp/2);
+		return temp * temp;
+	}
 }
 
-/*Sample Output
-Sorter 4 created
-4 counting lines
-4 reading file
-4 sorting file
-4 sending files
-Sorter 4 writing to parent
-Sorter 4 writing to parent
-Sorter 4 writing to parent
-Sorter 4 writing to parent
-Sorter 4 writing to parent
-Sorter 4 writing to parent
-Sorter 4 closed	File Size = 6
-Sorter 1 created
-1 counting lines
-1 reading file
-1 sorting file
-1 sending files
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 writing to parent
-Sorter 1 closed	File Size = 22
-Sorter 3 created
-3 counting lines
-3 reading file
-3 sorting file
-3 sending files
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 writing to parent
-Sorter 3 closed	File Size = 25
-Sorter 2 created
-2 counting lines
-2 reading file
-2 sorting file
-2 sending files
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 writing to parent
-Sorter 2 closed	File Size = 35
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 2 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-Merger 1 writing to parent
-transactionNum = 15, customerNum = 1006, amount = 143.280000
-transactionNum = 1, customerNum = 1007, amount = 64.890000
-transactionNum = 17, customerNum = 1016, amount = 83.200000
-transactionNum = 25, customerNum = 1021, amount = 117.700000
-transactionNum = 10, customerNum = 1021, amount = 54.370000
-transactionNum = 6, customerNum = 1026, amount = 31.730000
-transactionNum = 14, customerNum = 1030, amount = 17.950000
-transactionNum = 7, customerNum = 1031, amount = 90.950000
-transactionNum = 2, customerNum = 1038, amount = 98.700000
-transactionNum = 33, customerNum = 1046, amount = 7.800000
-transactionNum = 15, customerNum = 1050, amount = 26.430000
-transactionNum = 11, customerNum = 1055, amount = 114.720000
-transactionNum = 19, customerNum = 1057, amount = 131.430000
-transactionNum = 9, customerNum = 1057, amount = 92.870000
-transactionNum = 22, customerNum = 1067, amount = 131.740000
-transactionNum = 12, customerNum = 1079, amount = 59.800000
-transactionNum = 3, customerNum = 1087, amount = 16.710000
-transactionNum = 1, customerNum = 1095, amount = 132.410000
-transactionNum = 20, customerNum = 1099, amount = 92.430000
-transactionNum = 22, customerNum = 1103, amount = 100.630000
-transactionNum = 7, customerNum = 1107, amount = 108.980000
-transactionNum = 2, customerNum = 1111, amount = 59.360000
-transactionNum = 8, customerNum = 1129, amount = 13.870000
-transactionNum = 18, customerNum = 1149, amount = 22.270000
-transactionNum = 13, customerNum = 1153, amount = 47.430000
-transactionNum = 31, customerNum = 1157, amount = 62.870000
-transactionNum = 17, customerNum = 1158, amount = 119.830000
-transactionNum = 5, customerNum = 1166, amount = 138.220000
-transactionNum = 1, customerNum = 1166, amount = 121.580000
-transactionNum = 30, customerNum = 1166, amount = 91.280000
-transactionNum = 13, customerNum = 1172, amount = 17.620000
-transactionNum = 21, customerNum = 1176, amount = 92.700000
-transactionNum = 5, customerNum = 1183, amount = 24.600000
-transactionNum = 14, customerNum = 1187, amount = 147.980000
-transactionNum = 20, customerNum = 1188, amount = 149.730000
-transactionNum = 5, customerNum = 1196, amount = 9.390000
-transactionNum = 10, customerNum = 1196, amount = 119.410000
-transactionNum = 4, customerNum = 1198, amount = 110.120000
-transactionNum = 6, customerNum = 1205, amount = 106.310000
-transactionNum = 11, customerNum = 1219, amount = 37.740000
-transactionNum = 16, customerNum = 1224, amount = 110.980000
-transactionNum = 9, customerNum = 1230, amount = 103.180000
-transactionNum = 24, customerNum = 1243, amount = 60.300000
-transactionNum = 3, customerNum = 1243, amount = 94.460000
-transactionNum = 13, customerNum = 1246, amount = 147.000000
-transactionNum = 3, customerNum = 1260, amount = 65.320000
-transactionNum = 27, customerNum = 1262, amount = 87.980000
-transactionNum = 29, customerNum = 1262, amount = 50.650000
-transactionNum = 21, customerNum = 1272, amount = 102.300000
-transactionNum = 8, customerNum = 1279, amount = 10.420000
-transactionNum = 18, customerNum = 1279, amount = 6.100000
-transactionNum = 1, customerNum = 1283, amount = 104.950000
-transactionNum = 4, customerNum = 1292, amount = 135.420000
-transactionNum = 8, customerNum = 1302, amount = 93.510000
-transactionNum = 22, customerNum = 1306, amount = 9.000000
-transactionNum = 7, customerNum = 1306, amount = 82.400000
-transactionNum = 4, customerNum = 1315, amount = 77.550000
-transactionNum = 6, customerNum = 1319, amount = 94.770000
-transactionNum = 24, customerNum = 1324, amount = 109.980000
-transactionNum = 5, customerNum = 1337, amount = 73.340000
-transactionNum = 28, customerNum = 1350, amount = 110.150000
-transactionNum = 32, customerNum = 1361, amount = 136.610000
-transactionNum = 17, customerNum = 1364, amount = 133.750000
-transactionNum = 11, customerNum = 1379, amount = 31.520000
-transactionNum = 21, customerNum = 1381, amount = 31.260000
-transactionNum = 10, customerNum = 1395, amount = 92.950000
-transactionNum = 35, customerNum = 1399, amount = 124.220000
-transactionNum = 26, customerNum = 1403, amount = 86.880000
-transactionNum = 25, customerNum = 1405, amount = 117.830000
-transactionNum = 16, customerNum = 1407, amount = 145.830000
-transactionNum = 16, customerNum = 1409, amount = 71.930000
-transactionNum = 3, customerNum = 1410, amount = 92.440000
-transactionNum = 2, customerNum = 1411, amount = 15.370000
-transactionNum = 19, customerNum = 1412, amount = 78.580000
-transactionNum = 34, customerNum = 1413, amount = 57.820000
-transactionNum = 12, customerNum = 1424, amount = 63.840000
-transactionNum = 23, customerNum = 1426, amount = 13.000000
-transactionNum = 23, customerNum = 1431, amount = 127.800000
-transactionNum = 2, customerNum = 1433, amount = 8.160000
-transactionNum = 12, customerNum = 1434, amount = 80.270000
-transactionNum = 6, customerNum = 1438, amount = 76.340000
-transactionNum = 6, customerNum = 1438, amount = 76.340000
-transactionNum = 4, customerNum = 1450, amount = 5.130000
-transactionNum = 15, customerNum = 1454, amount = 53.130000
-transactionNum = 18, customerNum = 1479, amount = 118.940000
-transactionNum = 19, customerNum = 1479, amount = 100.310000
-transactionNum = 19, customerNum = 1479, amount = 100.310000
-transactionNum = 14, customerNum = 1480, amount = 7.400000
-transactionNum = 14, customerNum = 1480, amount = 7.400000
-transactionNum = 9, customerNum = 1495, amount = 119.200000
-transactionNum = 9, customerNum = 1495, amount = 119.200000
 
+/*Samples Output
 
-Total Customers = 91
 */
