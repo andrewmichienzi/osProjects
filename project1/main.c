@@ -20,12 +20,8 @@ struct Customer
 struct threadArgs
 {
 	int threadNumber;
-	int flag[2];
-	int turn;
 	int ready;
 	int open;
-	int child;
-	int custPtr;
 	struct Customer nextCustomer;
 	int fd[2];
 	int isMaster;
@@ -55,9 +51,9 @@ int main(int argc, char* argv[])
 
 
 	//int status;
-	struct threadArgs childArgs1 = {1,{false, false}, 0, 1, 1, 1};
-	struct threadArgs childArgs2 = {2, {false, false}, 0, 1, 1, 1};	
-	struct threadArgs masterArgs = {0, {false, false}, 0, 1, 1, 1};
+	struct threadArgs childArgs1 = {1, 1, 1};
+	struct threadArgs childArgs2 = {2, 1, 1};	
+	struct threadArgs masterArgs = {0, 1, 1};
 	masterArgs.isMaster = 1;
 	childArgs1.isMaster = 0;
 	childArgs1.isMaster = 0;
@@ -128,8 +124,8 @@ void* merger(void* arg)
 	struct threadArgs * parentArgs = (struct threadArgs *)arg;
 	int * mNumber = &parentArgs->threadNumber;
 	printf("Merger %d created\n", *mNumber);
-	struct threadArgs childArgs1 = {0, {false, false}, 0, 1, 1, 1};
-	struct threadArgs childArgs2 = {0, {false, false}, 0, 1, 1, 2};
+	struct threadArgs childArgs1 = {0, 1, 1};
+	struct threadArgs childArgs2 = {0, 1, 2};
 	childArgs1.isMaster = 0;
 	childArgs2.isMaster = 0;
 	childArgs1.threadNumber = (((*mNumber)*2)-1);
