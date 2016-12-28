@@ -192,7 +192,7 @@ void* sorter(void* arg)
 {
 	int couldFindFile;
 	struct threadArgs * mergerArgs = (struct threadArgs *)arg;
-	//sleep(30);
+	sleep(30);
 	int * sNumber = &mergerArgs->threadNumber;
 	printf("Sorter %d created\n", *sNumber);
 	int fileSize = 0;	
